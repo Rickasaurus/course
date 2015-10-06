@@ -14,8 +14,10 @@ fastAnagrams ::
   Chars
   -> Filename
   -> IO (List Chars)
-fastAnagrams =
-  error "todo: Course.FastAnagrams#fastAnagrams"
+fastAnagrams str file = findIntersect <$> readFile file
+  where findIntersect fileContents = let dataSet = S.fromList (hlist $ lines fileContents) in
+                                     filter (\perm -> S.member perm dataSet) (permutations str)
+
 
 newtype NoCaseString =
   NoCaseString {

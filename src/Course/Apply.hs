@@ -35,8 +35,7 @@ instance Apply Id where
     Id (a -> b)
     -> Id a
     -> Id b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Id"
+  (<*>) (Id f) (Id a) = Id (f a)
 
 -- | Implement @Apply@ instance for @List@.
 --
@@ -47,8 +46,8 @@ instance Apply List where
     List (a -> b)
     -> List a
     -> List b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance List"
+  (<*>) (fh :. ft) a = (map fh a) ++ (ft <*> a)
+  (<*>) Nil _ = Nil
 
 -- | Implement @Apply@ instance for @Optional@.
 --
@@ -65,8 +64,8 @@ instance Apply Optional where
     Optional (a -> b)
     -> Optional a
     -> Optional b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Optional"
+  (<*>) (Full f) a = f <$> a
+  (<*>) (Empty) _ = Empty
 
 -- | Implement @Apply@ instance for reader.
 --
@@ -89,8 +88,7 @@ instance Apply ((->) t) where
     ((->) t (a -> b))
     -> ((->) t a)
     -> ((->) t b)
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance ((->) t)"
+  (<*>) r f = \v -> r v (f v)
 
 -- | Apply a binary function in the environment.
 --
@@ -117,8 +115,7 @@ lift2 ::
   -> f a
   -> f b
   -> f c
-lift2 =
-  error "todo: Course.Apply#lift2"
+lift2 fn fa fb = fn <$> fa <*> fb
 
 -- | Apply a ternary function in the environment.
 --
@@ -149,8 +146,7 @@ lift3 ::
   -> f b
   -> f c
   -> f d
-lift3 =
-  error "todo: Course.Apply#lift2"
+lift3 fn fa fb fc = fn <$> fa <*> fb <*> fc
 
 -- | Apply a quaternary function in the environment.
 --
@@ -182,8 +178,7 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 =
-  error "todo: Course.Apply#lift4"
+lift4 fn fa fb fc fd = fn <$> fa <*> fb <*> fc <*> fd
 
 -- | Sequence, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -208,8 +203,10 @@ lift4 =
   f a
   -> f b
   -> f b
-(*>) =
-  error "todo: Course.Apply#(*>)"
+  -- A collection of functions that return input the length of fa,
+  -- then Apply that over fb
+--(*>) fa fb = let v = (\v1 v2 -> v2) <$> fa in v <*> fb
+(*>) fa fb = (\_ v2 -> v2) <$> fa <*> fb
 
 -- | Sequence, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -234,8 +231,7 @@ lift4 =
   f b
   -> f a
   -> f b
-(<*) =
-  error "todo: Course.Apply#(<*)"
+(<*) fb fa = (\v1 _ -> v1) <$> fb <*> fa
 
 -----------------------
 -- SUPPORT LIBRARIES --

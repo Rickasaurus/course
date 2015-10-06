@@ -187,7 +187,7 @@ data Digit =
   | Seven
   | Eight
   | Nine
-  deriving (Eq, Enum, Bounded)
+  deriving (Eq, Enum, Bounded, Show)
 
 showDigit ::
   Digit
@@ -218,7 +218,7 @@ data Digit3 =
   D1 Digit
   | D2 Digit Digit
   | D3 Digit Digit Digit
-  deriving Eq
+  deriving (Eq, Show)
 
 -- Possibly convert a character to a digit.
 fromChar ::
@@ -323,5 +323,87 @@ fromChar _ =
 dollars ::
   Chars
   -> Chars
-dollars =
-  error "todo: Course.Cheque#dollars"
+dollars str =
+  let (dlrs, cnts) = span (/= '.') str in
+  let chunkedDlrs = mapCharsToChunkedDigits dlrs in
+  let chunkedCnts = mapCentsCharsToChunkedDigits cnts in
+  let dollarWords = (foldRight (\el acc -> if acc == "" then el else el ++ (toAndWord acc) ++ acc) "" $ filter (/= "") $ mapChunkedDigitsToWords chunkedDlrs) ++ (toDollarWord chunkedDlrs) in
+  let centsWords = dig3ToWords chunkedCnts ++ (toCentWord chunkedCnts) in
+  dollarWords ++ " and " ++ centsWords
+  where toDollarWord dw = case dw of
+                          (D1 One :. Nil) -> " dollar"
+                          _ -> " dollars"
+        toCentWord cc = case cc of
+                        D2 Zero One -> " cent"
+                        _ -> " cents"
+                              -- I'm sorry
+        toAndWord chunkWord = if elem "hundred" $ words chunkWord then " " else " and "
+
+
+mapChunkedDigitsToWords :: List Digit3 -> List Chars
+mapChunkedDigitsToWords dig3s = reverse $ zipWith (\dig ill -> concatIllion (dig3ToWords dig) ill) (reverse dig3s) illion
+  where concatIllion :: Chars -> Chars -> Chars
+        concatIllion digStr illStr = case (digStr, illStr) of
+                                     ("", "") -> ""
+                                     (ds, "") -> ds
+                                     ("", is) -> ""
+                                     (ds, is) -> ds ++ " " ++ is
+
+dig3ToWords (D1 dig) = showDigit dig
+dig3ToWords (D2 Zero dig2) = showDigit dig2
+dig3ToWords (D2 One m) = digToTensWord m
+dig3ToWords (D2 n Zero) = digToTensPlaceWord n
+dig3ToWords (D2 n m) = digToTensPlaceWord n ++ "-" ++ showDigit m
+dig3ToWords (D3 Zero Zero Zero) = ""
+dig3ToWords (D3 dig1 Zero Zero) = showDigit dig1 ++ " hundred"
+dig3ToWords (D3 Zero dig2 dig3) = dig3ToWords (D2 dig2 dig3)
+dig3ToWords (D3 dig1 Zero dig3) = showDigit dig1 ++ " hundred and " ++ showDigit dig3
+dig3ToWords (D3 dig1 dig2 Zero) = showDigit dig1 ++ " hundred and " ++ digToTensPlaceWord dig2
+dig3ToWords (D3 dig1 dig2 dig3) = showDigit dig1 ++ " hundred and " ++ digToTensPlaceWord dig2 ++ "-" ++ showDigit dig3
+
+digToTensPlaceWord Zero = undefined
+digToTensPlaceWord One = "ten"
+digToTensPlaceWord Two = "twenty"
+digToTensPlaceWord Three = "thirty"
+digToTensPlaceWord Four = "forty"
+digToTensPlaceWord Five = "fifty"
+digToTensPlaceWord Six = "sixty"
+digToTensPlaceWord Seven = "seventy"
+digToTensPlaceWord Eight = "eighty"
+digToTensPlaceWord Nine = "ninety"
+
+digToTensWord Zero = "ten"
+digToTensWord One = "eleven"
+digToTensWord Two = "twelve"
+digToTensWord Three = "thirteen"
+digToTensWord Four = "fourteen"
+digToTensWord Five = "fifteen"
+digToTensWord Six = "sixteen"
+digToTensWord Seven = "seventeen"
+digToTensWord Eight = "eighteen"
+digToTensWord Nine = "nineteen"
+
+mapCentsCharsToChunkedDigits :: List Char -> Digit3
+mapCentsCharsToChunkedDigits chrs =
+   toDigit2 $ take 2 $ listOptional (\c -> fromChar c) chrs
+   where toDigit2 (h1 :. h2 :. _) = D2 h1 h2
+         toDigit2 (h1 :. Nil) = D2 h1 Zero
+         toDigit2 Nil = D1 Zero
+
+mapCharsToChunkedDigits :: List Char -> List Digit3
+mapCharsToChunkedDigits chrs = fixZero $ reverse $ mapDigitsToChunks $ listOptional (\c -> fromChar c) (reverse chrs)
+   where fixZero res = case res of
+                       Nil -> D1 Zero :. Nil
+                       _   -> res
+
+mapDigitsToChunks :: List Digit -> List Digit3
+mapDigitsToChunks chrs = case chunkDigits chrs of
+                         Full (dg, Nil) -> dg :. Nil
+                         Full (dg, rest) -> dg :. (mapDigitsToChunks rest)
+                         Empty -> Nil
+
+chunkDigits :: List Digit -> Optional (Digit3, List Digit)
+chunkDigits (ones :. tens :. hundreds :. rest) = Full $ (D3 hundreds tens ones, rest)
+chunkDigits (ones :. tens :. Nil) = Full $ (D2 tens ones, Nil)
+chunkDigits (ones :. Nil) = Full $ (D1 ones, Nil)
+chunkDigits Nil = Empty

@@ -63,7 +63,8 @@ the contents of c
 main ::
   IO ()
 main =
-  error "todo: Course.FileIO#main"
+  let file = headOr Nil <$> getArgs in
+  run =<< file
 
 type FilePath =
   Chars
@@ -72,31 +73,35 @@ type FilePath =
 run ::
   Chars
   -> IO ()
-run =
-  error "todo: Course.FileIO#run"
+run filename =
+  if filename == Nil then void (pure filename)
+  else printFiles =<< getFiles =<<
+       lines <$> readFile filename -- IO (List Chars)
 
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: Course.FileIO#getFiles"
+getFiles filenames =
+  sequence
+    (map getFile filenames) -- List (IO (FilePath, Chars))
 
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo: Course.FileIO#getFile"
+getFile path =
+  (\v -> (path, v)) <$> readFile path -- IO Chars
 
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
-printFiles =
-  error "todo: Course.FileIO#printFiles"
+printFiles filesAndContents =
+  void $ sequence $ map (\(path, contents) -> printFile path contents) filesAndContents
 
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo: Course.FileIO#printFile"
-
+printFile path contents =
+  let chars = take 12 (repeat '=') in
+  let line = chars ++ (' ' :. Nil) ++ path in
+  void $ sequence (putStrLn line :. putStrLn contents :. putStrLn Nil :. Nil)

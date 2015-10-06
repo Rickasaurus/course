@@ -84,7 +84,10 @@ data Op =
 convertInteractive ::
   IO ()
 convertInteractive =
-  error "todo: Course.Interactive#convertInteractive"
+   vooid $
+       putStr "Enter a string to convert to uppercase: " >-
+       getLine >>= \line ->
+       putStrLn $ map toUpper line
 
 -- |
 --
@@ -112,7 +115,13 @@ convertInteractive =
 reverseInteractive ::
   IO ()
 reverseInteractive =
-  error "todo: Course.Interactive#reverseInteractive"
+  vooid $
+    putStr "Enter filename to reverse: " >-
+    getLine >>= \infile ->
+    readFile infile >>= \incontents ->
+    putStr "Enter output filename: " >-
+    getLine >>= \outfile ->
+    writeFile outfile $ reverse incontents
 
 -- |
 --
@@ -138,7 +147,16 @@ reverseInteractive =
 encodeInteractive ::
   IO ()
 encodeInteractive =
-  error "todo: Course.Interactive#encodeInteractive"
+  vooid $
+    putStr "Enter string to URL encode: " >-
+    getLine >>= \instr ->
+    putStrLn $ flatMap mapper instr
+  where mapper c = case c of
+                   ' '  -> "%20"
+                   '\t' -> "%09"
+                   '\"' -> "%22"
+                   cc -> cc :. Nil
+
 
 interactive ::
   IO ()

@@ -46,8 +46,7 @@ class Apply f => Applicative f where
   (a -> b)
   -> f a
   -> f b
-(<$>) =
-  error "todo: Course.Applicative#(<$>)"
+(<$>) fn fa = (pure fn) <*> fa
 
 -- | Insert into Id.
 --
@@ -56,8 +55,7 @@ instance Applicative Id where
   pure ::
     a
     -> Id a
-  pure =
-    error "todo: Course.Applicative pure#instance Id"
+  pure a = Id a
 
 -- | Insert into a List.
 --
@@ -66,8 +64,7 @@ instance Applicative List where
   pure ::
     a
     -> List a
-  pure =
-    error "todo: Course.Applicative pure#instance List"
+  pure a = a :. Nil
 
 -- | Insert into an Optional.
 --
@@ -76,8 +73,7 @@ instance Applicative Optional where
   pure ::
     a
     -> Optional a
-  pure =
-    error "todo: Course.Applicative pure#instance Optional"
+  pure a = Full a
 
 -- | Insert into a constant function.
 --
@@ -86,8 +82,7 @@ instance Applicative ((->) t) where
   pure ::
     a
     -> ((->) t a)
-  pure =
-    error "todo: Course.Applicative pure#((->) t)"
+  pure a = \_ -> a
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -109,8 +104,8 @@ sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence lst = foldRight (lift2 (:.)) (pure Nil) lst
+--sequence lst = foldRight (\fa fla -> lift2 (:.) fa fla) (pure Nil) lst
 
 -- | Replicate an effect a given number of times.
 --
@@ -133,8 +128,9 @@ replicateA ::
   Int
   -> f a
   -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA 0 _ = pure Nil
+replicateA n fa = lift2 (:.) fa (replicateA (n - 1) fa)
+
 
 -- | Filter a list with a predicate that produces an effect.
 --
@@ -161,8 +157,14 @@ filtering ::
   (a -> f Bool)
   -> List a
   -> f (List a)
-filtering =
-  error "todo: Course.Applicative#filtering"
+filtering prd inlst =
+  let inner ele bool lst = if bool then ele :. lst else lst in
+  foldRight (\a fla -> lift2 (inner a) (prd a) fla) (pure Nil) inlst
+
+--from parsonsmatt
+--filtering p = foldRight f (pure Nil)
+--    where
+--        f x = lift2 (\b -> if b then (x :.) else id) (p x)
 
 -----------------------
 -- SUPPORT LIBRARIES --
